@@ -1,6 +1,6 @@
 # eliassen-snowflake-fmc
 
-When run as pipeline by the VaultSpeed agent, the bash script and SQL objects transforms the JSON mapping file generated in the FMC package into a DAG (directed acyclic graph) of Snowflake tasks.
+When run as a pipeline by the VaultSpeed agent, the bash script and SQL objects transform the JSON mapping in the FMC package into a DAG (directed acyclic graph) of Snowflake tasks.
 
 Contents: 
 - snowsql_deploy_fmc.bash - Bash script for deploying the VaultSpeed FMC (Flow Management Control) to Snowflake
@@ -17,15 +17,15 @@ How to implement in your environment:
   1. In snowsql_deploy_fmc.bash, update the variables and default values between the ## BEGIN EDIT ## and ## END EDIT ## comment lines with the values for your environment.
      ## Update snowsql_deploy_fmc.bash here:  ##
     ## BEGIN EDIT ##
-    snowsql_conn=ACCOUNT_ADMIN
-    snowflake_warehouse=VAULTSPEED_WH
-    agent_folder=/home/azureuser/agent
-    task_schema=TASKER
+    snowsql_conn=ACCOUNT_ADMIN                               ## Connection for used by SnowSQL to execute deployment SQL
+    snowflake_warehouse=VAULTSPEED_WH                        ## Target Snowflake warehouse
+    agent_folder=/home/azureuser/agent                       ## The directory where vs-agent resides
+    task_schema=TASKER                                       ## The schema where the Snowflake tasks are deployed
     default_schedule="USING CRON 0 0 1 1 * America/New_York" ## Here, 01 January at midnight is the default when no schedule is available in the FMC definition
-    use_start_dt_as_load_dt=Y #Sets load date for incremental loads to the start date selected when creating FMC workflow
-    max_dep_per_grp=100 #Maximum number of dependencies per group
-    snowsql_dir=/home/azureuser/bin/
-    snowsql_config_path=/home/azureuser/.snowsql/config
+    use_start_dt_as_load_dt=Y                                ## Sets load date for incremental loads to the start date selected when creating FMC workflow
+    max_dep_per_grp=100                                      ## Maximum number of dependencies per group; the limit is 100 as of this script version
+    snowsql_dir=/home/azureuser/bin/                         ## Directory that contains the SnowSQL executable, snowsql
+    snowsql_config_path=/home/azureuser/.snowsql/config      ## The path to the SnowSQL config file
     ## END EDIT ##
   3. Copy/replace this bash file into the agent folder in your VaultSpeed agent enviroment.
   4. Execute create_fmc_objects.sql queries in the target VaultSpeed database. BE AWARE that the old SQL objects, and any modification will be dropped and replaced.
