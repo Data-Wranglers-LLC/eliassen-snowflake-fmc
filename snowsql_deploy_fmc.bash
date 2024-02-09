@@ -5,9 +5,9 @@ set -e
 
 zipname=$1
 
-##################################################
-## Variables - change these for you environment ##
-##################################################
+###################################################
+## Variables - change these for your environment ##
+###################################################
 
 ## BEGIN EDIT ##
 snowsql_conn=ACCOUNT_ADMIN
