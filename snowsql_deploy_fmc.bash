@@ -21,7 +21,7 @@ snowsql_dir=/home/azureuser/bin/
 snowsql_config_path=/home/azureuser/.snowsql/config
 ## END EDIT ##
 
-## Define the transform_json function
+## Define the split_deps function
 split_deps() {
     local json="$1"
     local max_deps_per_grp=$2
