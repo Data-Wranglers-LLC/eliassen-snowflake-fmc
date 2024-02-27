@@ -17,6 +17,7 @@ use_start_dt_as_load_dt=Y #Sets load date for incremental loads to the start dat
 max_dep_per_grp=100 #Maximum number of dependencies per group
 snowsql_dir=/home/azureuser/bin/
 snowsql_config_path=/home/azureuser/.snowsql/config
+task_stage="@TASK_JSON_STAGE"
 ## END EDIT ##
 
 ## Define the split_deps function
@@ -68,8 +69,8 @@ split_deps() {
 }
 
 ## Set file and directory paths
-path_to_generated_files=`cat $agent_folder/client.properties | grep ^path.in | cut -d '=' -f 2`
-# Check if the zipfile is there
+path_to_generated_files=`cat $agent_folder/client.properties | grep ^path.in | cut -d '=' -f 2 | tr -d ' '`
+## Check if the zipfile is there
 if ! [ -f $path_to_generated_files/$zipname ]; then
     echo "cannot find file $path_to_generated_files/$zipname"
     echo "exiting script"
@@ -102,11 +103,20 @@ if (( $max_dep_ct > $max_dep_per_grp )); then
     fmc_json_mapping=$(split_deps "$fmc_json_mapping" $max_dep_per_grp)
 fi
 
+## Build fmc mapping JSON filepath
+fmc_json_filepath=$path_to_generated_files/${zipname%%.*}/fmc_mapping.json
+
+## Echo out JSON mapping to file
+echo "$fmc_json_mapping" > "$fmc_json_filepath"
+
 ## Truncate table that stores JSON mapping
 ${snowsql_dir}snowsql -c $snowsql_conn --config $snowsql_config_path -o exit_on_error=true -q "TRUNCATE TASKER.TASK_MAPPING;"
 
-## Insert JSON mapping into task mapping table; use as work table for task generation procedure
-${snowsql_dir}snowsql -c $snowsql_conn --config $snowsql_config_path -o exit_on_error=true -q "INSERT INTO TASKER.TASK_MAPPING (JSON_MAPPING) SELECT TO_VARIANT(PARSE_JSON('$fmc_json_mapping'));"
+## Load JSON mapping file to internal stage in Snowflake
+${snowsql_dir}snowsql -c $snowsql_conn --config $snowsql_config_path -o exit_on_error=true -q "PUT file://$fmc_json_filepath $task_stage OVERWRITE=TRUE;"
+
+## Copy JSON mapping into task mapping table from internal stage; use JSON variant column from taks mapping table in task generation procedure
+${snowsql_dir}snowsql -c $snowsql_conn --config $snowsql_config_path -o exit_on_error=true -q "COPY INTO TASKER.TASK_MAPPING FROM @TASK_JSON_STAGE/fmc_mapping.json FILE_FORMAT = (TYPE = 'JSON');"
 
 ## Get DAG name, schedule interval, group tasks setting, and target database type from info JSON
 dag_name=$(echo $fmc_json_text|jq -r '.dag_name')
